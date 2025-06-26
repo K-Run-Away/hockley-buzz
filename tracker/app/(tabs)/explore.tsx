@@ -1,110 +1,214 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useHabits } from '@/hooks/useHabits';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
 
-export default function TabTwoScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
+export default function StatsScreen() {
+  const { habits, getHabitStreak } = useHabits();
+
+  const totalHabits = habits.length;
+  const completedToday = habits.filter(habit => {
+    const today = new Date().toDateString();
+    return habit.completedDates.some(date => 
+      new Date(date).toDateString() === today
+    );
+  }).length;
+
+  const totalCompletions = habits.reduce((total, habit) => 
+    total + habit.completedDates.length, 0
+  );
+
+  const averageStreak = habits.length > 0 
+    ? habits.reduce((total, habit) => total + getHabitStreak(habit), 0) / habits.length
+    : 0;
+
+  const StatCard = ({ title, value, icon, color }: any) => (
+    <ThemedView style={styles.statCard}>
+      <ThemedView style={[styles.iconContainer, { backgroundColor: color }]}>
+        <Ionicons name={icon} size={24} color="white" />
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
+      <ThemedView style={styles.statContent}>
+        <ThemedText type="title" style={styles.statValue}>
+          {value}
         </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
+        <ThemedText style={styles.statTitle}>{title}</ThemedText>
+      </ThemedView>
+    </ThemedView>
+  );
+
+  return (
+    <ThemedView style={styles.container}>
+      <ThemedView style={styles.header}>
+        <ThemedText type="title">Statistics</ThemedText>
+      </ThemedView>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ThemedView style={styles.statsGrid}>
+          <StatCard
+            title="Total Habits"
+            value={totalHabits}
+            icon="list"
+            color="#4CAF50"
+          />
+          <StatCard
+            title="Completed Today"
+            value={completedToday}
+            icon="checkmark-circle"
+            color="#2196F3"
+          />
+          <StatCard
+            title="Total Completions"
+            value={totalCompletions}
+            icon="trophy"
+            color="#FF9800"
+          />
+          <StatCard
+            title="Avg. Streak"
+            value={averageStreak.toFixed(1)}
+            icon="flame"
+            color="#F44336"
+          />
+        </ThemedView>
+
+        {habits.length > 0 && (
+          <ThemedView style={styles.habitStats}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+              Habit Details
             </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+            {habits.map(habit => (
+              <ThemedView key={habit.id} style={styles.habitStat}>
+                <ThemedText type="subtitle" style={styles.habitName}>
+                  {habit.name}
+                </ThemedText>
+                <ThemedView style={styles.habitMetrics}>
+                  <ThemedText style={styles.metric}>
+                    🔥 {getHabitStreak(habit)} day streak
+                  </ThemedText>
+                  <ThemedText style={styles.metric}>
+                    ✅ {habit.completedDates.length} total completions
+                  </ThemedText>
+                </ThemedView>
+              </ThemedView>
+            ))}
+          </ThemedView>
+        )}
+
+        {habits.length === 0 && (
+          <ThemedView style={styles.emptyState}>
+            <Ionicons name="stats-chart-outline" size={64} color="#ccc" />
+            <ThemedText type="subtitle" style={styles.emptyTitle}>
+              No data yet
+            </ThemedText>
+            <ThemedText style={styles.emptyDescription}>
+              Add some habits to see your statistics here!
+            </ThemedText>
+          </ThemedView>
+        )}
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
   },
-  titleContainer: {
+  header: {
+    padding: 20,
+    paddingTop: 60,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  statsGrid: {
     flexDirection: 'row',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 24,
+  },
+  statCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    flex: 1,
+    minWidth: '45%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statContent: {
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statTitle: {
+    fontSize: 12,
+    color: '#666',
+  },
+  habitStats: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
+    marginBottom: 16,
+  },
+  habitStat: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  habitName: {
+    marginBottom: 8,
+  },
+  habitMetrics: {
+    gap: 4,
+  },
+  metric: {
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    marginTop: 16,
+    marginBottom: 8,
+    color: '#666',
+  },
+  emptyDescription: {
+    textAlign: 'center',
+    color: '#999',
+    lineHeight: 20,
   },
 });
