@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drag & Drop Workout Planner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .input-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: flex-start;
+        }
+        #exercise-input {
+            width: 350px;
+            height: 180px;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            resize: vertical;
+        }
+        #generate-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background: #4CAF50;
+            color: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #generate-btn:hover {
+            background: #388e3c;
+        }
+        .goals-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        .goals-section h2 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 18px;
+        }
+        #goals-input {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            font-size: 15px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .planner {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 18px;
+            position: relative;
+        }
+        .pool {
+            background: #f0f4f8;
+            border-radius: 8px;
+            min-height: 320px;
+            padding: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            grid-row: span 2;
+            position: sticky;
+            top: 20px;
+            align-self: start;
+            transition: all 0.2s ease;
+        }
+        .pool-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .day {
+            background: #f0f4f8;
+            border-radius: 8px;
+            min-height: 320px;
+            padding: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+            position: sticky;
+            top: 20px;
+            align-self: start;
+            transition: all 0.2s ease;
+        }
+        .day-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .exercise-list {
+            flex: 1;
+            width: 100%;
+            min-height: 30px;
+            padding: 5px;
+            transition: background-color 0.2s;
+        }
+        .exercise {
+            background: #fff;
+            border: 1px solid #bdbdbd;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            padding: 8px 10px;
+            font-size: 15px;
+            cursor: grab;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+            user-select: none;
+            position: relative;
+        }
+        .exercise:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .exercise.dragging {
+            opacity: 0.5;
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .exercise-list.over {
+            background: #e8f5e9;
+            border: 2px dashed #4CAF50;
+        }
+        .drop-placeholder {
+            background: #e8f5e9;
+            border: 2px dashed #4CAF50;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            height: 40px;
+            transition: all 0.2s ease;
+        }
+        .day.drag-over {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: #e8f5e9;
+        }
+        .pool.drag-over {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: #e8f5e9;
+        }
+        @media (max-width: 1100px) {
+            .planner {
+                grid-template-columns: 1fr 1fr 1fr 1fr;
+                grid-auto-rows: minmax(320px, auto);
+            }
+            .pool, .day {
+                min-width: 180px;
+            }
+        }
+        @media (max-width: 700px) {
+            .planner {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Drag & Drop Workout Planner</h1>
+        <div class="input-section">
+            <div>
+                <label for="exercise-input"><b>Paste your exercises (one per line):</b></label><br>
+                <textarea id="exercise-input" placeholder="e.g.\nPush-Ups\nSquats\nPlank\n..."></textarea>
+            </div>
+            <button id="generate-btn">Generate Exercises</button>
+        </div>
+        <div class="goals-section">
+            <h2>Program Goals</h2>
+            <textarea id="goals-input" placeholder="Enter your program goals here..."></textarea>
+        </div>
+        <div class="planner">
+            <div class="pool" id="exercise-pool">
+                <div class="pool-title">Exercise Pool</div>
+                <div class="exercise-list" id="pool-list"></div>
+            </div>
+            <div class="day" data-day="Monday">
+                <div class="day-title">Monday</div>
+                <div class="exercise-list" id="monday-list"></div>
+            </div>
+            <div class="day" data-day="Tuesday">
+                <div class="day-title">Tuesday</div>
+                <div class="exercise-list" id="tuesday-list"></div>
+            </div>
+            <div class="day" data-day="Wednesday">
+                <div class="day-title">Wednesday</div>
+                <div class="exercise-list" id="wednesday-list"></div>
+            </div>
+            <div class="day" data-day="Thursday">
+                <div class="day-title">Thursday</div>
+                <div class="exercise-list" id="thursday-list"></div>
+            </div>
+            <div class="day" data-day="Friday">
+                <div class="day-title">Friday</div>
+                <div class="exercise-list" id="friday-list"></div>
+            </div>
+            <div class="day" data-day="Saturday">
+                <div class="day-title">Saturday</div>
+                <div class="exercise-list" id="saturday-list"></div>
+            </div>
+            <div class="day" data-day="Sunday">
+                <div class="day-title">Sunday</div>
+                <div class="exercise-list" id="sunday-list"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Helper to create a draggable exercise element
+        function createExerciseElement(text) {
+            const div = document.createElement('div');
+            div.className = 'exercise';
+            div.draggable = true;
+            div.textContent = text;
+            
+            div.addEventListener('dragstart', (e) => {
+                div.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', text);
+                e.dataTransfer.effectAllowed = 'move';
+                window._dragSource = div.parentElement;
+                
+                // Add drag-over class to all potential drop targets
+                document.querySelectorAll('.day, .pool').forEach(el => {
+                    el.classList.add('drag-over');
+                });
+            });
+            
+            div.addEventListener('dragend', () => {
+                div.classList.remove('dragging');
+                window._dragSource = null;
+                
+                // Remove drag-over class from all elements
+                document.querySelectorAll('.day, .pool').forEach(el => {
+                    el.classList.remove('drag-over');
+                });
+                
+                // Remove any remaining placeholders
+                document.querySelectorAll('.drop-placeholder').forEach(el => {
+                    el.remove();
+                });
+            });
+            
+            return div;
+        }
+
+        // Add drag & drop listeners to all exercise lists
+        function addDnDToList(list) {
+            list.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                list.classList.add('over');
+                
+                // Find the closest exercise element
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const placeholder = document.querySelector('.drop-placeholder');
+                
+                if (afterElement) {
+                    if (!placeholder) {
+                        const newPlaceholder = document.createElement('div');
+                        newPlaceholder.className = 'drop-placeholder';
+                        list.insertBefore(newPlaceholder, afterElement);
+                    } else {
+                        list.insertBefore(placeholder, afterElement);
+                    }
+                } else {
+                    if (!placeholder) {
+                        const newPlaceholder = document.createElement('div');
+                        newPlaceholder.className = 'drop-placeholder';
+                        list.appendChild(newPlaceholder);
+                    } else {
+                        list.appendChild(placeholder);
+                    }
+                }
+            });
+            
+            list.addEventListener('dragleave', () => {
+                list.classList.remove('over');
+                const placeholder = document.querySelector('.drop-placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+            });
+            
+            list.addEventListener('drop', (e) => {
+                e.preventDefault();
+                list.classList.remove('over');
+                const text = e.dataTransfer.getData('text/plain');
+                
+                // Remove placeholder
+                const placeholder = document.querySelector('.drop-placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+                
+                // Remove from old parent
+                if (window._dragSource) {
+                    const children = Array.from(window._dragSource.children);
+                    for (const child of children) {
+                        if (child.textContent === text && child.classList.contains('exercise')) {
+                            window._dragSource.removeChild(child);
+                            break;
+                        }
+                    }
+                }
+                
+                // Add to new parent
+                const newExercise = createExerciseElement(text);
+                const afterElement = getDragAfterElement(list, e.clientY);
+                if (afterElement) {
+                    list.insertBefore(newExercise, afterElement);
+                } else {
+                    list.appendChild(newExercise);
+                }
+            });
+        }
+
+        // Helper function to determine where to place the dragged item
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.exercise:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // Setup all lists
+        const poolList = document.getElementById('pool-list');
+        const dayLists = [
+            document.getElementById('monday-list'),
+            document.getElementById('tuesday-list'),
+            document.getElementById('wednesday-list'),
+            document.getElementById('thursday-list'),
+            document.getElementById('friday-list'),
+            document.getElementById('saturday-list'),
+            document.getElementById('sunday-list'),
+        ];
+        addDnDToList(poolList);
+        dayLists.forEach(addDnDToList);
+
+        // Generate exercises from textarea
+        document.getElementById('generate-btn').onclick = function() {
+            // Get existing exercises from all lists
+            const existingExercises = new Set();
+            const allLists = [poolList, ...dayLists];
+            allLists.forEach(list => {
+                list.querySelectorAll('.exercise').forEach(exercise => {
+                    existingExercises.add(exercise.textContent);
+                });
+            });
+
+            // Get new exercises from input
+            const input = document.getElementById('exercise-input').value;
+            const lines = input.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+            
+            // Only add new exercises to the pool
+            for (const line of lines) {
+                if (!existingExercises.has(line)) {
+                    poolList.appendChild(createExerciseElement(line));
+                }
+            }
+
+            // Clear the input textarea
+            document.getElementById('exercise-input').value = '';
+        };
+    </script>
+</body>
+</html> 

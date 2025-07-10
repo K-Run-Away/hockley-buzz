@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mantelpiece Planner</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .image-container {
+            position: relative;
+            display: inline-block;
+            margin: 20px auto;
+        }
+
+        #mantelImage {
+            max-width: 100%;
+            height: auto;
+            display: none; /* Hide initially */
+        }
+
+        .measurement-line {
+            position: absolute;
+            height: 2px;
+            background-color: red;
+            transform-origin: left center;
+            cursor: move;
+        }
+
+        .measurement-label {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .upload-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .instructions {
+            margin: 10px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="upload-container">
+            <h2>Mantelpiece Planner</h2>
+            <p class="instructions">1. Select your mantelpiece image<br>2. Add measurement lines and drag them into position<br>3. Click and drag line ends to resize<br>4. Click a line and press 'r' to rotate</p>
+            <input type="file" accept="image/*" id="imageInput" onchange="handleImageUpload(event)">
+        </div>
+        <div class="controls" style="display: none;">
+            <button onclick="addMeasurementLine()">Add Measurement Line</button>
+        </div>
+        <div class="image-container">
+            <img id="mantelImage" alt="Mantelpiece Planning Image">
+        </div>
+    </div>
+
+    <script>
+        // Constants for real-world measurements
+        const CABINET_GAP_MM = 1685; // Distance between cabinets in mm
+        const CEILING_TO_HOB_MM = 865; // Height from ceiling to hob in mm
+        const UPPER_UNIT_HEIGHT_MM = 795; // Height of upper unit in mm
+
+        let lineCounter = 0;
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('mantelImage');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    document.querySelector('.controls').style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addMeasurementLine() {
+            const imageContainer = document.querySelector('.image-container');
+            const line = document.createElement('div');
+            const label = document.createElement('div');
+            
+            line.className = 'measurement-line';
+            label.className = 'measurement-label';
+            
+            const lineId = `line-${lineCounter++}`;
+            line.id = lineId;
+            
+            // Set initial line properties
+            line.style.width = '200px';
+            line.style.left = '50%';
+            line.style.top = '50%';
+            
+            // Make line draggable and resizable
+            makeDraggable(line);
+            makeResizable(line);
+            makeRotatable(line);
+            
+            // Add label
+            label.textContent = '200mm';
+            line.appendChild(label);
+            
+            imageContainer.appendChild(line);
+            updateMeasurement(line);
+        }
+
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            element.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                
+                element.style.top = (element.offsetTop - pos2) + "px";
+                element.style.left = (element.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        function makeResizable(element) {
+            element.style.cursor = 'ew-resize';
+            element.addEventListener('mousedown', initResize);
+
+            function initResize(e) {
+                if (e.target !== element) return;
+                
+                const startX = e.clientX;
+                const startWidth = element.offsetWidth;
+                
+                function doResize(e) {
+                    const newWidth = startWidth + (e.clientX - startX);
+                    element.style.width = `${newWidth}px`;
+                    updateMeasurement(element);
+                }
+                
+                function stopResize() {
+                    window.removeEventListener('mousemove', doResize);
+                    window.removeEventListener('mouseup', stopResize);
+                }
+                
+                window.addEventListener('mousemove', doResize);
+                window.addEventListener('mouseup', stopResize);
+            }
+        }
+
+        function makeRotatable(element) {
+            let rotation = 0;
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.target !== element) return;
+                
+                if (e.key === 'r') {
+                    rotation += 5;
+                    element.style.transform = `rotate(${rotation}deg)`;
+                }
+            });
+        }
+
+        function updateMeasurement(element) {
+            const imageWidth = document.getElementById('mantelImage').offsetWidth;
+            const lineWidth = element.offsetWidth;
+            
+            // Calculate real-world measurement based on the reference (cabinet gap)
+            const pixelsPerMM = imageWidth / CABINET_GAP_MM;
+            const realMM = Math.round(lineWidth * (1 / pixelsPerMM));
+            
+            const label = element.querySelector('.measurement-label');
+            label.textContent = `${realMM}mm`;
+        }
+    </script>
+</body>
+</html> 

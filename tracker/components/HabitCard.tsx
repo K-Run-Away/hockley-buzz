@@ -1,7 +1,8 @@
 import { Habit } from '@/types/habit';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { HabitHeatmap } from './HabitHeatmap';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 
@@ -20,6 +21,8 @@ export function HabitCard({
   onToggleCompletion, 
   onDelete 
 }: HabitCardProps) {
+  const [showHeatmap, setShowHeatmap] = useState(false);
+
   const handleDelete = () => {
     Alert.alert(
       'Delete Habit',
@@ -29,6 +32,11 @@ export function HabitCard({
         { text: 'Delete', style: 'destructive', onPress: () => onDelete(habit.id) },
       ]
     );
+  };
+
+  const handleHeatmapDayPress = (date: Date) => {
+    // Toggle completion for the selected date
+    onToggleCompletion(habit.id);
   };
 
   return (
@@ -66,6 +74,32 @@ export function HabitCard({
           </TouchableOpacity>
         </ThemedView>
       </TouchableOpacity>
+
+      <ThemedView style={styles.heatmapSection}>
+        <TouchableOpacity 
+          style={styles.heatmapToggle}
+          onPress={() => setShowHeatmap(!showHeatmap)}
+        >
+          <ThemedText style={styles.heatmapToggleText}>
+            {showHeatmap ? 'Hide' : 'View'} Activity Heatmap
+          </ThemedText>
+          <Ionicons 
+            name={showHeatmap ? "chevron-up" : "chevron-down"} 
+            size={16} 
+            color="#666" 
+          />
+        </TouchableOpacity>
+        
+        {showHeatmap && (
+          <ThemedView style={styles.heatmapContainer}>
+            <HabitHeatmap 
+              habit={habit} 
+              daysToShow={90} 
+              onDayPress={handleHeatmapDayPress}
+            />
+          </ThemedView>
+        )}
+      </ThemedView>
     </ThemedView>
   );
 }
@@ -122,5 +156,25 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     padding: 8,
+  },
+  heatmapSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  heatmapToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  heatmapToggleText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  heatmapContainer: {
+    marginTop: 12,
   },
 }); 

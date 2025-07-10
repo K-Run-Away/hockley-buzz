@@ -1,12 +1,14 @@
+import { HabitHeatmap } from '@/components/HabitHeatmap';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useHabits } from '@/hooks/useHabits';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 
 export default function StatsScreen() {
-  const { habits, getHabitStreak } = useHabits();
+  const { habits, getHabitStreak, toggleHabitCompletion } = useHabits();
+  const [expandedHabits, setExpandedHabits] = useState<Set<string>>(new Set());
 
   const totalHabits = habits.length;
   const completedToday = habits.filter(habit => {
@@ -37,6 +39,21 @@ export default function StatsScreen() {
       </ThemedView>
     </ThemedView>
   );
+
+  const toggleHabitExpansion = (habitId: string) => {
+    const newExpanded = new Set(expandedHabits);
+    if (newExpanded.has(habitId)) {
+      newExpanded.delete(habitId);
+    } else {
+      newExpanded.add(habitId);
+    }
+    setExpandedHabits(newExpanded);
+  };
+
+  const handleHeatmapDayPress = (habitId: string, date: Date) => {
+    // Toggle completion for the selected date
+    toggleHabitCompletion(habitId, date);
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -77,21 +94,48 @@ export default function StatsScreen() {
             <ThemedText type="subtitle" style={styles.sectionTitle}>
               Habit Details
             </ThemedText>
-            {habits.map(habit => (
-              <ThemedView key={habit.id} style={styles.habitStat}>
-                <ThemedText type="subtitle" style={styles.habitName}>
-                  {habit.name}
-                </ThemedText>
-                <ThemedView style={styles.habitMetrics}>
-                  <ThemedText style={styles.metric}>
-                    🔥 {getHabitStreak(habit)} day streak
-                  </ThemedText>
-                  <ThemedText style={styles.metric}>
-                    ✅ {habit.completedDates.length} total completions
-                  </ThemedText>
+            {habits.map(habit => {
+              const isExpanded = expandedHabits.has(habit.id);
+              return (
+                <ThemedView key={habit.id} style={styles.habitStat}>
+                  <ThemedView style={styles.habitHeader}>
+                    <ThemedView style={styles.habitInfo}>
+                      <ThemedText type="subtitle" style={styles.habitName}>
+                        {habit.name}
+                      </ThemedText>
+                      <ThemedView style={styles.habitMetrics}>
+                        <ThemedText style={styles.metric}>
+                          🔥 {getHabitStreak(habit)} day streak
+                        </ThemedText>
+                        <ThemedText style={styles.metric}>
+                          ✅ {habit.completedDates.length} total completions
+                        </ThemedText>
+                      </ThemedView>
+                    </ThemedView>
+                    <TouchableOpacity 
+                      style={styles.expandButton}
+                      onPress={() => toggleHabitExpansion(habit.id)}
+                    >
+                      <Ionicons 
+                        name={isExpanded ? "chevron-up" : "chevron-down"} 
+                        size={20} 
+                        color="#666" 
+                      />
+                    </TouchableOpacity>
+                  </ThemedView>
+                  
+                  {isExpanded && (
+                    <ThemedView style={styles.heatmapContainer}>
+                      <HabitHeatmap 
+                        habit={habit} 
+                        daysToShow={365} 
+                        onDayPress={(date) => handleHeatmapDayPress(habit.id, date)}
+                      />
+                    </ThemedView>
+                  )}
                 </ThemedView>
-              </ThemedView>
-            ))}
+              );
+            })}
           </ThemedView>
         )}
 
@@ -185,6 +229,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  habitHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  habitInfo: {
+    flex: 1,
+  },
   habitName: {
     marginBottom: 8,
   },
@@ -194,6 +246,16 @@ const styles = StyleSheet.create({
   metric: {
     fontSize: 14,
     color: '#666',
+  },
+  expandButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  heatmapContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
   },
   emptyState: {
     flex: 1,

@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wall Diagram</title>
+    <style>
+        #diagram-container {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 10px;
+            position: relative;
+        }
+        #wall {
+            position: relative;
+            border: 2px solid black;
+            background-color: #f0f0f0;
+            margin: 20px 0;
+        }
+        .ruler {
+            width: 30px;
+            height: 100%;
+            position: relative;
+            background-color: #f8f8f8;
+            border: 1px solid #ccc;
+            margin-top: 45px; /* Adjust to match button height + spacing */
+        }
+        .ruler-mark {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            height: 1px;
+        }
+        .ruler-mark::before {
+            content: '';
+            width: 10px;
+            height: 1px;
+            background-color: #666;
+        }
+        .ruler-mark::after {
+            content: '';
+            width: 10px;
+            height: 1px;
+            background-color: #666;
+        }
+        .ruler-text {
+            position: absolute;
+            left: 2px;
+            transform: translateY(-50%);
+        }
+        .light {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: yellow;
+            border: 1px solid orange;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .rectangle {
+            position: absolute;
+            border: 2px solid blue;
+            background-color: rgba(0, 0, 255, 0.2);
+            cursor: move;
+            min-width: 50px;
+            min-height: 50px;
+        }
+        .delete-btn {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .measurements {
+            position: absolute;
+            font-size: 12px;
+            color: #333;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 2px;
+            top: 0;
+            left: 0;
+        }
+        .door-marker {
+            position: absolute;
+            left: -40px;
+            width: 40px;
+            height: 20px;
+            background-color: #8b4513;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        .horizontal-ruler {
+            width: 100%;
+            height: 30px;
+            position: relative;
+            background-color: #f8f8f8;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+        .horizontal-mark {
+            position: absolute;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            top: 0;
+        }
+        .horizontal-mark::before {
+            content: '';
+            width: 1px;
+            height: 10px;
+            background-color: #666;
+        }
+        .ruler-mark {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            transform: translateY(50%);
+        }
+        
+        /* Add resize handles */
+        .resize-handle {
+            width: 10px;
+            height: 10px;
+            background-color: blue;
+            position: absolute;
+            border: 1px solid white;
+        }
+        
+        .resize-handle.top-left { 
+            top: -5px; 
+            left: -5px; 
+            cursor: nw-resize; 
+        }
+        .resize-handle.top-right { 
+            top: -5px; 
+            right: -5px; 
+            cursor: ne-resize; 
+        }
+        .resize-handle.bottom-left { 
+            bottom: -5px; 
+            left: -5px; 
+            cursor: sw-resize; 
+        }
+        .resize-handle.bottom-right { 
+            bottom: -5px; 
+            right: -5px; 
+            cursor: se-resize; 
+        }
+        .rectangle-controls {
+            position: absolute;
+            top: -25px;
+            right: -25px;
+            display: flex;
+            gap: 5px;
+        }
+        .control-btn {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .delete-btn {
+            background-color: red;
+        }
+        .copy-btn {
+            background-color: #4CAF50;
+        }
+        .alignment-guide {
+            position: absolute;
+            background-color: #ff00ff;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .alignment-guide.vertical {
+            width: 1px;
+            height: 100%;
+        }
+        .alignment-guide.horizontal {
+            width: 100%;
+            height: 1px;
+        }
+        .wall-section {
+            position: absolute;
+            border: 2px dashed rgba(255, 0, 0, 0.5);
+            box-sizing: border-box;
+        }
+        .wall-section.left {
+            width: calc(1080 * 0.2px);  /* 1.08m */
+            height: 100%;
+            left: 0;
+            background-color: rgba(255, 200, 200, 0.1);
+        }
+        .wall-section.right {
+            width: calc(1150 * 0.2px);  /* 1.15m */
+            height: 100%;
+            right: 0;
+            background-color: rgba(200, 255, 200, 0.1);
+        }
+        .wall-section.middle {
+            width: calc(600 * 0.2px);   /* estimated 0.6m from photo */
+            height: calc(1230 * 0.2px); /* 1.23m */
+            left: calc(1080 * 0.2px);   /* starts after left section */
+            background-color: rgba(200, 200, 255, 0.1);
+        }
+        .wall-background {
+            position: absolute;
+            width: 150%;
+            height: 100%;
+            background: none;  /* Remove background-image from CSS */
+            pointer-events: all;
+            cursor: ew-resize;
+            overflow: hidden;
+        }
+        
+        .wall-background img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.3;
+        }
+        .section-label {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="diagram-container">
+        <div class="ruler" id="left-ruler"></div>
+        <div>
+            <button onclick="addRectangle()">Add Rectangle</button>
+            <input type="file" id="imageUpload" accept="image/*" style="margin-bottom: 10px;">
+            <div id="wall"></div>
+            <div class="horizontal-ruler" id="bottom-ruler"></div>
+        </div>
+        <div class="ruler" id="right-ruler"></div>
+    </div>
+
+    <script>
+        const SCALE = 0.2; // 1mm = 0.2px
+        const WALL_WIDTH = 2830;
+        const WALL_HEIGHT = 2570;
+        const LEFT_SECTION = 1080;  // 1.08m in mm
+        const RIGHT_SECTION = 1150; // 1.15m in mm
+        const MIDDLE_HEIGHT = 1230; // 1.23m in mm
+        
+        const wall = document.getElementById('wall');
+        wall.style.width = `${WALL_WIDTH * SCALE}px`;
+        wall.style.height = `${WALL_HEIGHT * SCALE}px`;
+
+        // Create rulers
+        function createRuler(elementId) {
+            const ruler = document.getElementById(elementId);
+            ruler.style.height = `${WALL_HEIGHT * SCALE}px`;
+            
+            // Add marks every 500mm, starting from bottom
+            for (let i = 0; i <= WALL_HEIGHT; i += 500) {
+                const mark = document.createElement('div');
+                mark.className = 'ruler-mark';
+                // Exact positioning from bottom
+                mark.style.bottom = `${i * SCALE}px`;
+                
+                // Separate text element for better alignment
+                const text = document.createElement('span');
+                text.className = 'ruler-text';
+                text.innerHTML = `${i}`;
+                mark.appendChild(text);
+                
+                ruler.appendChild(mark);
+            }
+
+            if (elementId === 'left-ruler') {
+                const doorMarker = document.createElement('div');
+                doorMarker.className = 'door-marker';
+                doorMarker.style.bottom = `${2000 * SCALE}px`;
+                doorMarker.innerHTML = 'Door';
+                ruler.appendChild(doorMarker);
+            }
+        }
+
+        // Add this new function for horizontal ruler
+        function createHorizontalRuler() {
+            const ruler = document.getElementById('bottom-ruler');
+            ruler.style.width = `${WALL_WIDTH * SCALE}px`;
+            
+            // Add marks every 500mm
+            for (let i = 0; i <= WALL_WIDTH; i += 500) {
+                const mark = document.createElement('div');
+                mark.className = 'horizontal-mark';
+                mark.style.left = `${i * SCALE}px`;
+                mark.innerHTML = `${i}`;
+                ruler.appendChild(mark);
+            }
+        }
+
+        // Call the functions
+        createRuler('left-ruler');
+        createRuler('right-ruler');
+        createHorizontalRuler();
+
+        // Modify the addLight function to position from bottom
+        function addLight(x, y, number) {
+            const light = document.createElement('div');
+            light.className = 'light';
+            light.style.left = `${x * SCALE}px`;
+            // Position from bottom instead of top
+            light.style.bottom = `${y * SCALE}px`;
+            light.title = `Light #${number}`;
+            wall.appendChild(light);
+        }
+
+        // Update light positions (y value is measured from bottom)
+        addLight(470, 1600, '1');
+        addLight(WALL_WIDTH - 490, 1600, '2');
+
+        let copiedDimensions = null;
+
+        function addRectangle(width = 100, height = 100) {
+            const rect = document.createElement('div');
+            rect.className = 'rectangle';
+            rect.style.width = width + 'px';
+            rect.style.height = height + 'px';
+            rect.style.left = '50px';
+            rect.style.bottom = '50px';
+
+            // Create controls container
+            const controls = document.createElement('div');
+            controls.className = 'rectangle-controls';
+
+            // Copy button
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'control-btn copy-btn';
+            copyBtn.innerHTML = '©';
+            copyBtn.title = 'Copy dimensions';
+            copyBtn.onclick = function(e) {
+                e.stopPropagation();
+                copiedDimensions = {
+                    width: rect.offsetWidth,
+                    height: rect.offsetHeight
+                };
+                copyBtn.innerHTML = '✓';
+                setTimeout(() => {
+                    copyBtn.innerHTML = '©';
+                }, 500);
+            };
+            controls.appendChild(copyBtn);
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'control-btn delete-btn';
+            deleteBtn.innerHTML = '×';
+            deleteBtn.title = 'Delete rectangle';
+            deleteBtn.onclick = function(e) {
+                e.stopPropagation();
+                rect.remove();
+            };
+            controls.appendChild(deleteBtn);
+
+            rect.appendChild(controls);
+
+            // Add resize handles
+            const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+            positions.forEach(pos => {
+                const handle = document.createElement('div');
+                handle.className = `resize-handle ${pos}`;
+                rect.appendChild(handle);
+                makeResizable(handle, rect, pos);
+            });
+            
+            const measurements = document.createElement('div');
+            measurements.className = 'measurements';
+            rect.appendChild(measurements);
+
+            wall.appendChild(rect);
+            makeDraggable(rect);
+            updateMeasurements(rect);
+        }
+
+        // Modify the Add Rectangle button to check for copied dimensions
+        document.querySelector('button').onclick = function() {
+            if (copiedDimensions) {
+                addRectangle(copiedDimensions.width, copiedDimensions.height);
+            } else {
+                addRectangle();
+            }
+        };
+
+        const SNAP_THRESHOLD = 10; // pixels
+        let activeGuides = [];
+
+        function clearGuides() {
+            activeGuides.forEach(guide => guide.remove());
+            activeGuides = [];
+        }
+
+        function createGuide(isVertical) {
+            const guide = document.createElement('div');
+            guide.className = `alignment-guide ${isVertical ? 'vertical' : 'horizontal'}`;
+            wall.appendChild(guide);
+            activeGuides.push(guide);
+            return guide;
+        }
+
+        function findNearestAlignment(rect, allElements) {
+            const rectBounds = rect.getBoundingClientRect();
+            const wallBounds = wall.getBoundingClientRect();
+            const rectCenter = {
+                x: rectBounds.left + rectBounds.width / 2,
+                y: rectBounds.top + rectBounds.height / 2
+            };
+            
+            let alignments = {
+                left: null,
+                center: null,
+                right: null,
+                top: null,
+                middle: null,
+                bottom: null,
+                distance: Infinity
+            };
+
+            // Add wall edges as alignment targets
+            const wallAlignments = [
+                { type: 'left', value: wallBounds.left },
+                { type: 'right', value: wallBounds.right - rectBounds.width }
+            ];
+
+            allElements.forEach(element => {
+                if (element === rect) return;
+                
+                const bounds = element.getBoundingClientRect();
+                const center = {
+                    x: bounds.left + bounds.width / 2,
+                    y: bounds.top + bounds.height / 2
+                };
+
+                // Enhanced horizontal alignments with distance checking
+                const horizontalAlignments = [
+                    { type: 'left', rect: rectBounds.left, target: bounds.left },
+                    { type: 'left', rect: rectBounds.left, target: bounds.right },
+                    { type: 'right', rect: rectBounds.right, target: bounds.left },
+                    { type: 'right', rect: rectBounds.right, target: bounds.right },
+                    { type: 'center', rect: rectCenter.x, target: center.x }
+                ];
+
+                horizontalAlignments.forEach(({type, rect, target}) => {
+                    const distance = Math.abs(rect - target);
+                    if (distance < SNAP_THRESHOLD && distance < alignments.distance) {
+                        alignments[type] = target;
+                        alignments.distance = distance;
+                    }
+                });
+
+                // Enhanced vertical alignments
+                const verticalAlignments = [
+                    { type: 'top', rect: rectBounds.top, target: bounds.top },
+                    { type: 'top', rect: rectBounds.top, target: bounds.bottom },
+                    { type: 'bottom', rect: rectBounds.bottom, target: bounds.top },
+                    { type: 'bottom', rect: rectBounds.bottom, target: bounds.bottom },
+                    { type: 'middle', rect: rectCenter.y, target: center.y }
+                ];
+
+                verticalAlignments.forEach(({type, rect, target}) => {
+                    const distance = Math.abs(rect - target);
+                    if (distance < SNAP_THRESHOLD && distance < alignments.distance) {
+                        alignments[type] = target;
+                        alignments.distance = distance;
+                    }
+                });
+            });
+
+            return alignments;
+        }
+
+        function updateDragging(element, newLeft, newTop) {
+            clearGuides();
+            
+            const allElements = [...document.querySelectorAll('.rectangle, .light')];
+            const wallBounds = wall.getBoundingClientRect();
+            
+            element.style.left = newLeft + 'px';
+            element.style.top = newTop + 'px';
+            
+            const alignments = findNearestAlignment(element, allElements);
+            
+            if (alignments.left !== null) {
+                const guide = createGuide(true);
+                guide.style.left = alignments.left + 'px';
+                newLeft = alignments.left - wallBounds.left;
+            }
+            if (alignments.right !== null) {
+                const guide = createGuide(true);
+                guide.style.left = alignments.right + 'px';
+                newLeft = alignments.right - wallBounds.left - element.offsetWidth;
+            }
+            if (alignments.center !== null) {
+                const guide = createGuide(true);
+                guide.style.left = alignments.center + 'px';
+                newLeft = alignments.center - wallBounds.left - element.offsetWidth / 2;
+            }
+            if (alignments.top !== null) {
+                const guide = createGuide(false);
+                guide.style.top = alignments.top + 'px';
+                newTop = alignments.top - wallBounds.top;
+            }
+            if (alignments.bottom !== null) {
+                const guide = createGuide(false);
+                guide.style.top = alignments.bottom + 'px';
+                newTop = alignments.bottom - wallBounds.top - element.offsetHeight;
+            }
+            if (alignments.middle !== null) {
+                const guide = createGuide(false);
+                guide.style.top = alignments.middle + 'px';
+                newTop = alignments.middle - wallBounds.top - element.offsetHeight / 2;
+            }
+
+            return { left: newLeft, top: newTop };
+        }
+
+        function makeDraggable(element) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            element.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                if (e.target !== element) return;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+
+                let newTop = element.offsetTop - pos2;
+                let newLeft = element.offsetLeft - pos1;
+
+                // Check wall boundaries
+                if (newTop >= 0 && newTop + element.offsetHeight <= wall.offsetHeight &&
+                    newLeft >= 0 && newLeft + element.offsetWidth <= wall.offsetWidth) {
+                    
+                    // Get snapped position
+                    const snappedPosition = updateDragging(element, newLeft, newTop);
+                    
+                    element.style.top = snappedPosition.top + "px";
+                    element.style.left = snappedPosition.left + "px";
+                    
+                    updateMeasurements(element);
+                }
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                clearGuides();
+            }
+        }
+
+        function makeResizable(handle, element, position) {
+            handle.onmousedown = function(e) {
+                e.stopPropagation();
+                
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const startWidth = element.offsetWidth;
+                const startHeight = element.offsetHeight;
+                const startLeft = element.offsetLeft;
+                const startTop = element.offsetTop;
+
+                function onMouseMove(e) {
+                    let newWidth = startWidth;
+                    let newHeight = startHeight;
+                    let newLeft = startLeft;
+                    let newTop = startTop;
+
+                    // Calculate new dimensions based on handle position
+                    if (position.includes('right')) {
+                        newWidth = startWidth + (e.clientX - startX);
+                    } else if (position.includes('left')) {
+                        newWidth = startWidth - (e.clientX - startX);
+                        newLeft = startLeft + (e.clientX - startX);
+                    }
+
+                    if (position.includes('bottom')) {
+                        newHeight = startHeight + (e.clientY - startY);
+                    } else if (position.includes('top')) {
+                        newHeight = startHeight - (e.clientY - startY);
+                        newTop = startTop + (e.clientY - startY);
+                    }
+
+                    // Apply minimum dimensions
+                    if (newWidth >= 50) {
+                        element.style.width = newWidth + 'px';
+                        if (position.includes('left')) {
+                            element.style.left = newLeft + 'px';
+                        }
+                    }
+
+                    if (newHeight >= 50) {
+                        element.style.height = newHeight + 'px';
+                        if (position.includes('top')) {
+                            element.style.top = newTop + 'px';
+                        }
+                    }
+
+                    updateMeasurements(element);
+                }
+
+                function onMouseUp() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+        }
+
+        function updateMeasurements(rect) {
+            const measurements = rect.querySelector('.measurements');
+            const left = Math.round(rect.offsetLeft / SCALE);
+            const bottom = Math.round((wall.offsetHeight - rect.offsetTop - rect.offsetHeight) / SCALE);
+            const width = Math.round(rect.offsetWidth / SCALE);
+            const height = Math.round(rect.offsetHeight / SCALE);
+            
+            measurements.innerHTML = `
+                Left: ${left}mm<br>
+                Bottom: ${bottom}mm<br>
+                Width: ${width}mm<br>
+                Height: ${height}mm
+            `;
+        }
+
+        function addWallSections() {
+            const sections = [
+                { name: 'left', width: '1.08m' },
+                { name: 'middle', width: '~0.60m' },
+                { name: 'right', width: '1.15m' }
+            ];
+            
+            sections.forEach(({name, width}) => {
+                const section = document.createElement('div');
+                section.className = `wall-section ${name}`;
+                
+                const label = document.createElement('div');
+                label.className = 'section-label';
+                label.textContent = `${name} (${width})`;
+                section.appendChild(label);
+                
+                wall.appendChild(section);
+            });
+        }
+
+        // Call this after wall initialization
+        addWallSections();
+
+        function initializeWall() {
+            const wall = document.getElementById('wall');
+            
+            // Create background container and image
+            const background = document.createElement('div');
+            background.className = 'wall-background';
+            
+            const img = document.createElement('img');
+            background.appendChild(img);
+            wall.insertBefore(background, wall.firstChild);
+            
+            let isDragging = false;
+            let startX;
+            let backgroundX = 0;
+
+            background.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX - backgroundX;
+                background.style.cursor = 'grabbing';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                
+                const newX = e.clientX - startX;
+                const maxDrag = background.offsetWidth - wall.offsetWidth;
+                backgroundX = Math.max(-maxDrag/2, Math.min(maxDrag/2, newX));
+                
+                img.style.transform = `translateX(${backgroundX}px)`;
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                background.style.cursor = 'ew-resize';
+            });
+
+            // Handle image upload
+            document.getElementById('imageUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        img.src = event.target.result;
+                        backgroundX = 0;
+                        img.style.transform = 'translateX(0)';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Call this after wall element is created
+        initializeWall();
+
+        // Add this after wall initialization
+        initializeWall();
+    </script>
+</body>
+</html> 

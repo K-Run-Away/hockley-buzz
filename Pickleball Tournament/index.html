@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pickleball Tournament Scheduler</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="nav-logo">Pickleball Tournament</div>
+            <div class="nav-links">
+                <button class="nav-button">MATCHES</button>
+                <button class="nav-button">STANDINGS</button>
+                <button class="nav-button">PLAYERS</button>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>Tournament Scheduler</h1>
+        <div class="input-section">
+            <div id="player-inputs">
+                <div class="player-input">
+                    <input type="text" placeholder="Enter player name" class="player-name">
+                </div>
+            </div>
+            <button id="add-player">Add Player</button>
+            <button id="generate-schedule">Generate Schedule</button>
+        </div>
+        <div id="schedule-results" class="hidden">
+            <h2>Tournament Schedule</h2>
+            <div id="matches"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
